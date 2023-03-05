@@ -29,22 +29,14 @@
             </intent-filter>
         </activity>
 
-<!--        <service-->
-<!--            android:name=".ExerciseJobService"-->
-<!--            android:enabled="true"-->
-<!--            android:exported="true"-->
-<!--            android:permission="android.permission.BIND_JOB_SERVICE" />-->
+        <service
+            android:name=".FcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
-<!--        <service-->
-<!--            android:name=".ExerciseIntentService"-->
-<!--            android:enabled="true"-->
-<!--            android:exported="false"/>-->
-
-<!--        <receiver-->
-<!--            android:name=".ExerciseBroadcastReceiver"-->
-<!--            android:enabled="true"-->
-<!--            android:exported="true"-->
-<!--            android:permission="TODO" />-->
     </application>
 
 </manifest>

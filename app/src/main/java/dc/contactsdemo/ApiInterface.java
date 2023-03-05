@@ -14,4 +14,7 @@ interface ApiInterface {
 
     @POST("contacts.php")
     Call<List<Contact>> actualContacts(@Query("user_id") int curUserId, @Body List<Contact> contacts);
+
+    @POST("update_token.php")
+    Call<String> updateToken(@Query("user_id") int curUserId, @Body String token);
 }
