@@ -7,7 +7,6 @@ public class Contact {
     String name;
     @SerializedName("nomer_user")
     String phone;
-    @SerializedName("data_user")
     private String birthday;
 
     public String getId() {

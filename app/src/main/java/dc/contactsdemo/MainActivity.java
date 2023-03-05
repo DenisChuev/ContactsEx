@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     public void addContacts(View view) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 
-        apiInterface.actualContacts(getContacts()).enqueue(new Callback<List<Contact>>() {
+        apiInterface.actualContacts(1, getContacts()).enqueue(new Callback<List<Contact>>() {
             @Override
             public void onResponse(Call<List<Contact>> call, Response<List<Contact>> response) {
                 Log.d(TAG, response.body().toString());
