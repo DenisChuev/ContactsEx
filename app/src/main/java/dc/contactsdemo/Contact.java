@@ -3,16 +3,12 @@ package dc.contactsdemo;
 import com.google.gson.annotations.SerializedName;
 
 public class Contact {
-    @SerializedName("id_user")
     String id;
     String name;
     @SerializedName("nomer_user")
     String phone;
     @SerializedName("data_user")
     private String birthday;
-    @SerializedName("user_url_photo")
-    private String photo;
-    private boolean tag;
 
     public String getId() {
         return id;
@@ -46,23 +42,13 @@ public class Contact {
         return birthday;
     }
 
-    public void setPhoto(String photo) {
-        this.photo = photo;
-    }
-
-    public String getPhoto() {
-        return photo;
-    }
-
-    public void setTag(boolean tag) {
-        this.tag = tag;
-    }
-
-    public boolean isTag() {
-        return tag;
-    }
-
-    public boolean getTag() {
-        return tag;
+    @Override
+    public String toString() {
+        return "Contact{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", phone='" + phone + '\'' +
+                ", birthday='" + birthday + '\'' +
+                '}';
     }
 }

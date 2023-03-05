@@ -3,9 +3,14 @@ package dc.contactsdemo;
 import java.util.List;
 
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 
 interface ApiInterface {
-    @GET("laffy/db_select_contact.php")
+    @GET("get_contacts.php")
     Call<List<Contact>> getContacts();
+
+    @POST("contacts.php")
+    Call<List<Contact>> actualContacts(@Body List<Contact> contacts);
 }

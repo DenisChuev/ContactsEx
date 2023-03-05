@@ -1,26 +1,21 @@
 package dc.contactsdemo;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.work.Constraints;
-import androidx.work.NetworkType;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
-
-import android.app.AlarmManager;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Build;
+import android.annotation.SuppressLint;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.provider.ContactsContract;
+import android.telephony.PhoneNumberUtils;
 import android.util.Log;
 import android.view.View;
 
-import java.util.Calendar;
-import java.util.concurrent.TimeUnit;
+import androidx.appcompat.app.AppCompatActivity;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -29,74 +24,65 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-//        JobScheduler scheduler = getSystemService(JobScheduler.class);
-//        if (scheduler.getPendingJob(12345) == null){
-//            // Context of the app under test.
-//            Context appContext = this;
-//            //Init intent with receiver class
-//            Intent demoIntentForBroadcast = new Intent(appContext, ExerciseBroadcastReceiver.class);
-//            //Add action to proper handle this request by receiver
-//            demoIntentForBroadcast.setAction(ExerciseBroadcastReceiver.ACTION_PERFORM_EXERCISE);
-//            //Sending broadcast with intent
-//            appContext.sendBroadcast(demoIntentForBroadcast);
-//        }
-//        else Log.d("TEST", "<KZM");
-
-//
-//        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
-//        Intent demoIntentForBroadcast = new Intent(this, ExerciseBroadcastReceiver.class);
-//        demoIntentForBroadcast.setAction(ExerciseBroadcastReceiver.ACTION_PERFORM_EXERCISE);
-//        PendingIntent pendingIntent;
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//            pendingIntent = PendingIntent.getBroadcast(
-//                    MainActivity.this, 0, demoIntentForBroadcast, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-//        } else {
-//            pendingIntent = PendingIntent.getBroadcast(
-//                    MainActivity.this, 0, demoIntentForBroadcast, PendingIntent.FLAG_UPDATE_CURRENT);
-//        }
-//        Calendar t = Calendar.getInstance();
-//        t.setTimeInMillis(System.currentTimeMillis());
-//
-//        int interval = 60 * 1000;
-//        am.setRepeating(AlarmManager.RTC_WAKEUP, t.getTimeInMillis(), interval, pendingIntent);
-
-
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
-
-        PeriodicWorkRequest work = new PeriodicWorkRequest.Builder(PeriodicWorker.class, 15, TimeUnit.MINUTES)
-                .setConstraints(constraints)
-                .build();
-        WorkManager.getInstance(this).enqueue(work);
-
-
-    }
-
-    public void scheduleJob(View v) {
-        ComponentName componentName = new ComponentName(this, ExerciseJobService.class);
-        JobInfo info = new JobInfo.Builder(12345, componentName)
-                .setRequiresCharging(false)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPeriodic(15 * 60 * 1000)
-                .build();
-
-        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
-        int resultCode = scheduler.schedule(info);
-        if (resultCode == JobScheduler.RESULT_SUCCESS) {
-            Log.d(TAG, "Job scheduled");
-        } else {
-            Log.d(TAG, "Job scheduling failed");
-        }
-    }
-
-    public void cancelJob(View v) {
-        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
-        scheduler.cancel(12345);
-        Log.d(TAG, "Job cancelled");
     }
 
     public void addContacts(View view) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+
+        apiInterface.actualContacts(getContacts()).enqueue(new Callback<List<Contact>>() {
+            @Override
+            public void onResponse(Call<List<Contact>> call, Response<List<Contact>> response) {
+                Log.d(TAG, response.body().toString());
+            }
+
+            @Override
+            public void onFailure(Call<List<Contact>> call, Throwable t) {
+
+            }
+        });
+//        Log.d(TAG, getContacts().toString());
+    }
+
+    @SuppressLint("Range")
+    public List<Contact> getContacts() {
+        List<Contact> contacts = new ArrayList<>();
+
+        Contact contact;
+        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+
+        if (cursor.getCount() > 0) {
+            while (cursor.moveToNext()) {
+                contact = new Contact();
+                String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                contact.setId(id);
+                String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                contact.setName(name);
+
+                String has_phone = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));
+                if (Integer.parseInt(has_phone) > 0) {
+                    Cursor pCur;
+                    pCur = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id}, null);
+                    while (pCur.moveToNext()) {
+                        String phone = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                        String normPhone = PhoneNumberUtils.normalizeNumber(phone);
+                        if (normPhone.startsWith("+")) {
+                            normPhone = normPhone.substring(1);
+                        } else {
+                            normPhone = "7" + normPhone.substring(1);
+                        }
+                        if (normPhone.length() != 11) continue;
+                        contact.setPhone(normPhone);
+                    }
+                    pCur.close();
+                }
+
+
+                if (name != null && !name.contains("@") && contact.phone != null) {
+                    contacts.add(contact);
+                }
+            }
+        }
+        cursor.close();
+        return contacts;
     }
 }
